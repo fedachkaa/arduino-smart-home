@@ -12,6 +12,7 @@
 #include "RainSensor.h"
 #include "AlarmController.h"
 #include "DoorController.h"
+#include "MotionSensor.h"
 
 class BluetoothController {
 public:
@@ -26,7 +27,8 @@ public:
         SoilMoistureSensor& soilSensor,
         RainSensor& rainSensor,
         AlarmController& alarmController,
-        DoorController& doorController
+        DoorController& doorController,
+        MotionSensor& motionSensor
     );
 
     void update();
@@ -56,10 +58,12 @@ private:
     RainSensor& _rainSensor;
     AlarmController& _alarmController;
     DoorController& _doorController;
+    MotionSensor& _motionSensor;
 
     bool _isRaining = false;
 
     void handleCommand(char command);
+    void sendSensorReading(const char* sensor, int value);
 
     enum class ParseState {
         WAITING_FOR_COMMAND,

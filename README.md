@@ -80,7 +80,7 @@ Commands are case-sensitive. Single-character commands do **not** require a term
 | `t0#` … `t180#` | Set door angle |
 | `c` / `d` | Relay on / off |
 | `e` / `f` / `g` | Play Happy Birthday / Ode to Joy / stop melody |
-| `h` / `i` / `j` / `k` | Read light / gas / soil / rain sensor (raw numeric response) |
+| `h` / `i` / `j` / `k` | Read light / gas / soil / rain sensor (identified response) |
 
 The numeric-command parser rejects invalid values, supports up to three digits, and times out incomplete commands after one second.
 
@@ -105,8 +105,20 @@ WINDOW:ANGLE:130
 ALARM:GAS:OFF
 ALARM:SOIL:OFF
 RAIN:STATE:OFF
+MOTION:STATE:OFF
 STATUS:END:OK
 ```
+
+Sensor reads use newline-terminated `SENSOR:VALUE` records:
+
+```text
+LIGHT:412
+GAS:214
+SOIL:650
+RAIN:800
+```
+
+The labels share names with some status components, but do not conflict: sensor readings have two colon-separated fields, while status and event records have three.
 
 ### Automatic events
 
@@ -120,8 +132,9 @@ STATUS:END:OK
 - Door state and mode
 - Gas and soil alarm state
 - Debounced rain state
+- PIR motion state after the 30-second startup stabilization period
 
-**Client implementation note:** BLE notifications can split or combine serial text. Buffer incoming data and parse complete lines ending in `\n`; do not assume one notification equals one record. The four raw sensor-read commands currently return plain numbers rather than structured records.
+**Client implementation note:** BLE notifications can split or combine serial text. Buffer incoming data and parse complete lines ending in `\n`; do not assume one notification equals one record. Identified sensor records can arrive independently or out of request order, so clients should route them by label rather than by the currently pending request.
 
 ## Getting started
 
@@ -137,6 +150,7 @@ The `Debug.h` macros default to `DEBUG_ENABLED 0` to avoid mixing diagnostic tex
 ## Automation notes
 
 - White light AUTO mode uses a light threshold and motion detection.
+- PIR input remains active locally during its startup stabilization period; only BLE change notifications are suppressed for the first 30 seconds. A `?` snapshot always includes the current raw PIR state.
 - Window AUTO mode responds to the rain sensor; the rain **event** uses separate hysteresis and debounce thresholds, so an actuator response and a rain notification may not occur at exactly the same instant.
 - Gas and soil alarms use thresholds and hysteresis; soil reading `0` is treated as disconnected/inactive in the current implementation.
 - Morse-code password: `.--.-.`. Treat this as a demonstration access mechanism, **not** as production-grade physical security.

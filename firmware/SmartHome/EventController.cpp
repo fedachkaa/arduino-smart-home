@@ -10,6 +10,7 @@ EventController::EventController(
     Fan& fan,
     Relay& relay,
     Led& yellowLed,
+    MotionSensor& motionSensor,
     BluetoothController& bluetoothController
 ) : _gasAlarm(gasAlarm),
     _soilAlarm(soilAlarm),
@@ -20,6 +21,7 @@ EventController::EventController(
     _fan(fan),
     _relay(relay),
     _yellowLed(yellowLed),
+    _motionSensor(motionSensor),
     _bluetoothController(bluetoothController) {}
 
 void EventController::update() {
@@ -38,6 +40,7 @@ void EventController::update() {
     ControlMode lightMode = _lightController.getMode();
     ControlMode windowMode = _windowController.getMode();
     DoorController::Mode doorMode = _doorController.getMode();
+    bool motionDetected = _motionSensor.isMotionDetected();
 
     bool rainActive = _previousRainState
         ? rainValue > RAIN_OFF_THRESHOLD
@@ -65,8 +68,37 @@ void EventController::update() {
         _previousWindowMode = windowMode;
         _previousDoorMode = doorMode;
 
+        _previousMotionState = motionDetected;
+        _pendingMotionState = motionDetected;
+        _motionStabilizationStartedAt = now;
+        _motionStateChangedAt = now;
+
         _initialized = true;
         return;
+    }
+
+    if (!_isMotionReportingReady) {
+        if (now - _motionStabilizationStartedAt >= MOTION_STABILIZATION_DELAY) {
+            _previousMotionState = motionDetected;
+            _pendingMotionState = motionDetected;
+            _motionStateChangedAt = now;
+            _isMotionReportingReady = true;
+        }
+    } else {
+        if (motionDetected != _pendingMotionState) {
+            _pendingMotionState = motionDetected;
+            _motionStateChangedAt = now;
+        }
+
+        if (_pendingMotionState != _previousMotionState &&
+            now - _motionStateChangedAt >= MOTION_DEBOUNCE_DELAY) {
+            _previousMotionState = _pendingMotionState;
+            _bluetoothController.sendEvent(
+                "MOTION",
+                "STATE",
+                _previousMotionState ? "ON" : "OFF"
+            );
+        }
     }
 
     // Gas events

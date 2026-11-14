@@ -65,7 +65,8 @@ BluetoothController bluetoothController(
     soilSensor, 
     rainSensor, 
     alarmController, 
-    doorController
+    doorController,
+    motionSensor
 );
 EventController eventController(
     gasAlarm,
@@ -77,6 +78,7 @@ EventController eventController(
     fan,
     relay,
     yellowLed,
+    motionSensor,
     bluetoothController
 );
 

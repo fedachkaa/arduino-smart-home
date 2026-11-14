@@ -13,7 +13,8 @@ BluetoothController::BluetoothController(
     SoilMoistureSensor& soilSensor,
     RainSensor& rainSensor,
     AlarmController& alarmController,
-    DoorController& doorController
+    DoorController& doorController,
+    MotionSensor& motionSensor
 ) : _fan(fan),
     _lightController(lightController),
     _windowController(windowController),
@@ -24,7 +25,8 @@ BluetoothController::BluetoothController(
     _soilSensor(soilSensor),
     _rainSensor(rainSensor),
     _alarmController(alarmController),
-    _doorController(doorController) {}
+    _doorController(doorController),
+    _motionSensor(motionSensor) {}
 
 void BluetoothController::update() {
     if (_parseState == ParseState::READING_NUMBER &&
@@ -120,19 +122,19 @@ void BluetoothController::handleCommand(char command) {
             break;
 
         case 'h':
-            Serial.println(_lightSensor.read());
+            sendSensorReading("LIGHT", _lightSensor.read());
             break;
 
         case 'i':
-            Serial.println(_gasSensor.read());
+            sendSensorReading("GAS", _gasSensor.read());
             break;
 
         case 'j':
-            Serial.println(_soilSensor.read());
+            sendSensorReading("SOIL", _soilSensor.read());
             break;
 
         case 'k':
-            Serial.println(_rainSensor.read());
+            sendSensorReading("RAIN", _rainSensor.read());
             break;
         
         // Buzzer melodies
@@ -259,6 +261,15 @@ void BluetoothController::resetNumericParser() {
     _lastNumericByteAt = 0;
 }
 
+void BluetoothController::sendSensorReading(
+    const char* sensor,
+    int value
+) {
+    Serial.print(sensor);
+    Serial.print(':');
+    Serial.println(value);
+}
+
 void BluetoothController::sendEvent(
     const char* component,
     const char* event,
@@ -333,6 +344,8 @@ void BluetoothController::sendStatus() {
 
     // Rain
     sendEvent("RAIN", "STATE", _isRaining ? "ON" : "OFF");
+
+    sendEvent("MOTION", "STATE", _motionSensor.isMotionDetected() ? "ON" : "OFF");
 
     sendEvent("STATUS", "END", "OK");
 }

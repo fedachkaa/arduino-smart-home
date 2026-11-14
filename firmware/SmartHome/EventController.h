@@ -10,6 +10,7 @@
 #include "Fan.h"
 #include "Relay.h"
 #include "Led.h"
+#include "MotionSensor.h"
 
 class EventController {
 public:
@@ -23,6 +24,7 @@ public:
         Fan& fan,
         Relay& relay,
         Led& yellowLed,
+        MotionSensor& motionSensor,
         BluetoothController& bluetoothController
     );
 
@@ -39,6 +41,7 @@ private:
     Fan& _fan;
     Relay& _relay;
     Led& _yellowLed;
+    MotionSensor& _motionSensor;
 
     bool _previousSoilState = false;
     DoorController::State _previousDoorState = DoorController::State::CLOSED;
@@ -61,7 +64,15 @@ private:
     ControlMode _previousWindowMode = ControlMode::AUTO;
     DoorController::Mode _previousDoorMode = DoorController::Mode::AUTO;
 
+    bool _previousMotionState = false;
+    bool _pendingMotionState = false;
+    bool _isMotionReportingReady = false;
+    unsigned long _motionStabilizationStartedAt = 0;
+    unsigned long _motionStateChangedAt = 0;
+
     static constexpr unsigned long RAIN_DEBOUNCE_DELAY = 500;
     static constexpr int RAIN_ON_THRESHOLD = 850;
     static constexpr int RAIN_OFF_THRESHOLD = 750;
+    static constexpr unsigned long MOTION_STABILIZATION_DELAY = 30000;
+    static constexpr unsigned long MOTION_DEBOUNCE_DELAY = 100;
 };
